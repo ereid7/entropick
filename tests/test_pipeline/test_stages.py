@@ -21,18 +21,15 @@ from qr_sampler.stages import (
     AdaptiveInjectionStage,
     DRYPenaltyStage,
     EntropyFetchStage,
-    EtaSamplingStage,
     GumbelSelectionStage,
     LogitPerturbationStage,
     MinPStage,
     MirostatStage,
     SelectionDriftStage,
     SelectionStage,
-    TailFreeSamplingStage,
     TemperatureModulationStage,
     TemperatureStage,
     TopNSigmaStage,
-    TypicalSamplingStage,
     XTCStage,
     build_default_pipeline,
 )
@@ -57,9 +54,6 @@ class TestPipelineStageProtocol:
             TemperatureStage,
             TemperatureModulationStage,
             MinPStage,
-            TailFreeSamplingStage,
-            TypicalSamplingStage,
-            EtaSamplingStage,
             XTCStage,
             EntropyFetchStage,
             SelectionDriftStage,
@@ -93,7 +87,7 @@ class TestStageRegistry:
     """Test the StageRegistry discovery and lookup."""
 
     def test_builtin_stages_registered(self) -> None:
-        """All 16 built-in stages are registered."""
+        """All 13 built-in stages are registered."""
         registered = StageRegistry.list_registered()
         expected = {
             "adaptive_injection",
@@ -103,9 +97,6 @@ class TestStageRegistry:
             "temperature",
             "temp_modulation",
             "min_p",
-            "tfs",
-            "typical",
-            "eta",
             "xtc",
             "entropy_fetch",
             "selection_drift",
@@ -129,10 +120,10 @@ class TestStageRegistry:
 class TestBuildDefaultPipeline:
     """Test the default pipeline builder."""
 
-    def test_returns_16_stages(self) -> None:
-        """Default pipeline has 16 stages."""
+    def test_returns_13_stages(self) -> None:
+        """Default pipeline has 13 stages."""
         pipeline = build_default_pipeline()
-        assert len(pipeline) == 16
+        assert len(pipeline) == 13
 
     def test_returns_fresh_list(self) -> None:
         """Each call returns a new list (safe to mutate)."""
@@ -152,9 +143,6 @@ class TestBuildDefaultPipeline:
             "temperature",
             "temp_modulation",
             "min_p",
-            "tfs",
-            "typical",
-            "eta",
             "xtc",
             "entropy_fetch",
             "selection_drift",
@@ -212,7 +200,7 @@ class TestCustomPipeline:
     def test_pipeline_property(self) -> None:
         """Processor exposes its pipeline via property."""
         proc = make_processor()
-        assert len(proc.pipeline) == 16
+        assert len(proc.pipeline) == 13
         assert all(isinstance(s, PipelineStage) for s in proc.pipeline)
 
     def test_processor_accepts_pipeline_arg(self) -> None:

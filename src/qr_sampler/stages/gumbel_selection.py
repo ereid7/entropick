@@ -49,6 +49,10 @@ class GumbelSelectionStage:
         if not ctx.config.gumbel_selection:
             return
 
+        # Skip if another selector (e.g., Mirostat) already chose a token.
+        if ctx.token_id >= 0:
+            return
+
         temperature = ctx.temperature
         if temperature <= 0:
             # Greedy: pick the argmax directly.

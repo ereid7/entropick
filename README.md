@@ -32,7 +32,7 @@ This is a research tool. It makes no claims about consciousness or quantum mecha
 
 ## How it works
 
-qr-sampler has a **pipeline of 16 available stages**, but most are **disabled by default**. With default config, only 3 stages do actual work — the rest are no-ops that return immediately when their config parameter is zero/false.
+qr-sampler has a **pipeline of 13 available stages**, but most are **disabled by default**. With default config, only 3 stages do actual work — the rest are no-ops that return immediately when their config parameter is zero/false.
 
 ### Default path (what always runs)
 
@@ -41,10 +41,10 @@ Logits from vLLM (one row per batch request)
   │
   ├─ 5. Temperature ──────── Compute temperature via strategy (fixed or EDT)
   │
-  ├─ 12. Entropy Fetch ───── Fetch fresh random bytes + amplify to u∈(0,1)
-  │      (20,480 bytes → z)     just-in-time, after logits exist
+  ├─ 9. Entropy Fetch ────── Fetch fresh random bytes + amplify to u∈(0,1)
+  │     (20,480 bytes → z)      just-in-time, after logits exist
   │
-  └─ 16. Selection ────────── top-k → softmax → top-p → CDF → select token
+  └─ 13. Selection ────────── top-k → softmax → top-p → CDF → select token
        (force one-hot logits)    vLLM picks exactly this token
 ```
 
@@ -81,38 +81,29 @@ Enable any combination of these by setting their control parameter to a non-zero
   │  7. Min-P ────────────── Dynamic probability floor                      │
   │     (qr_min_p)                 disabled by default (0.0)                │
   │                                                                         │
-  │  8. TFS ──────────────── Tail-free sampling via 2nd derivatives         │
-  │     (qr_tfs_z)                 disabled by default (1.0)                │
-  │                                                                         │
-  │  9. Typical ──────────── Locally typical sampling                       │
-  │     (qr_typical_p)             disabled by default (1.0)                │
-  │                                                                         │
-  │  10. Eta ─────────────── Entropy-aware probability cutoff               │
-  │      (qr_eta_cutoff)           disabled by default (0.0)                │
-  │                                                                         │
-  │  11. XTC ─────────────── Quantum coin-flip top-token exclusion          │
-  │      (qr_xtc_probability)      disabled by default (0.0)                │
+  │  8. XTC ──────────────── Quantum coin-flip top-token exclusion          │
+  │     (qr_xtc_probability)      disabled by default (0.0)                 │
   │                                                                         │
   └─────────────────────────────────────────────────────────────────────────┘
 
-  ── 12. Entropy Fetch ───── ALWAYS RUNS ──────────────────────────────────
+  ── 9. Entropy Fetch ────── ALWAYS RUNS ──────────────────────────────────
 
   ┌─ SELECTION MODIFIER (post-entropy) ─────────────────────────────────────┐
   │                                                                         │
-  │  13. Selection Drift ──── Drift u with temporal memory                  │
+  │  10. Selection Drift ──── Drift u with temporal memory                  │
   │      (qr_drift_step)           disabled by default (0.0)                │
   │                                                                         │
   └─────────────────────────────────────────────────────────────────────────┘
 
   ┌─ TOKEN SELECTION (mutually exclusive — only one runs) ──────────────────┐
   │                                                                         │
-  │  14. Mirostat ────────── Adaptive perplexity control                    │
+  │  11. Mirostat ────────── Adaptive perplexity control                    │
   │      (qr_mirostat_mode=2)      disabled by default (0)                  │
   │                                                                         │
-  │  15. Gumbel Selection ── Gumbel-Max trick with quantum noise            │
+  │  12. Gumbel Selection ── Gumbel-Max trick with quantum noise            │
   │      (qr_gumbel_selection)     disabled by default (false)              │
   │                                                                         │
-  │  16. Selection ────────── CDF-based token selection                     │
+  │  13. Selection ────────── CDF-based token selection                     │
   │      (default method)          runs if neither Mirostat nor Gumbel is on│
   │                                                                         │
   └─────────────────────────────────────────────────────────────────────────┘
@@ -211,30 +202,6 @@ Pre-softmax logit filter — keeps only tokens whose logits are within N standar
 | Parameter | Default | Effect |
 |-----------|---------|--------|
 | `qr_top_n_sigma` | `0.0` | Number of standard deviations (0 = disabled) |
-
-### Tail-Free Sampling (`qr_tfs_z`)
-
-Removes low-information probability tails using second derivatives of the sorted probability distribution. Tokens in the "tail" contribute little information and are masked out.
-
-| Parameter | Default | Effect |
-|-----------|---------|--------|
-| `qr_tfs_z` | `1.0` | Cumulative threshold on 2nd derivatives (1.0 = disabled) |
-
-### Typical Sampling (`qr_typical_p`)
-
-Locally typical sampling — keeps tokens whose surprisal (-log p) is closest to the distribution's Shannon entropy H. Tokens that are neither too surprising nor too predictable are "typical."
-
-| Parameter | Default | Effect |
-|-----------|---------|--------|
-| `qr_typical_p` | `1.0` | Cumulative probability threshold (1.0 = disabled) |
-
-### Eta Sampling (`qr_eta_cutoff`)
-
-Entropy-aware probability cutoff — computes a dynamic threshold from the distribution's entropy and removes tokens below it. Higher-entropy distributions get a more permissive cutoff.
-
-| Parameter | Default | Effect |
-|-----------|---------|--------|
-| `qr_eta_cutoff` | `0.0` | Cutoff in 1e-4 units (0 = disabled) |
 
 ### Mirostat v2 (`qr_mirostat_mode`)
 
@@ -594,9 +561,6 @@ All configuration is done via environment variables with the `QR_` prefix. Per-r
 | `QR_DRIFT_STEP` | `qr_drift_step` | `0.0` | Selection drift step size (`0` disables) |
 | `QR_DRIFT_INITIAL_POSITION` | `qr_drift_initial_position` | `0.5` | Initial drift position in `[0, 1)` |
 | `QR_TOP_N_SIGMA` | `qr_top_n_sigma` | `0.0` | Keep logits within N sigma of max (`0` disables) |
-| `QR_TFS_Z` | `qr_tfs_z` | `1.0` | Tail-free sampling z threshold (`1.0` disables) |
-| `QR_TYPICAL_P` | `qr_typical_p` | `1.0` | Locally typical sampling threshold (`1.0` disables) |
-| `QR_ETA_CUTOFF` | `qr_eta_cutoff` | `0.0` | Eta sampling cutoff in 1e-4 units (`0` disables) |
 | `QR_DRY_MULTIPLIER` | `qr_dry_multiplier` | `0.0` | DRY repetition penalty multiplier (`0` disables) |
 | `QR_DRY_BASE` | `qr_dry_base` | `1.75` | DRY penalty base for exponential scaling |
 | `QR_DRY_ALLOWED_LENGTH` | `qr_dry_allowed_length` | `2` | DRY minimum repeated sequence length to penalize |
@@ -606,8 +570,6 @@ All configuration is done via environment variables with the `QR_` prefix. Per-r
 | `QR_MIROSTAT_TAU` | `qr_mirostat_tau` | `5.0` | Mirostat target surprise rate (nats) |
 | `QR_MIROSTAT_ETA` | `qr_mirostat_eta` | `0.1` | Mirostat learning rate |
 | `QR_GUMBEL_SELECTION` | `qr_gumbel_selection` | `false` | Use Gumbel-Max selection instead of CDF binary search |
-| `QR_ENTROPIX_VARENTROPY` | `qr_entropix_varentropy` | `false` | Enable varentropy-based regime switching |
-| `QR_ENTROPIX_VARENTROPY_THRESH` | `qr_entropix_varentropy_thresh` | `3.0` | Varentropy threshold for "confused" regime (nats^2) |
 | `QR_INJECTION_VERBOSE` | `qr_injection_verbose` | `false` | Log per-token injection diagnostics at debug level |
 | `QR_LOG_LEVEL` | `qr_log_level` | `summary` | Logging: `none`, `summary`, `full` |
 | `QR_DIAGNOSTIC_MODE` | `qr_diagnostic_mode` | `false` | Store all token records in memory |
@@ -789,17 +751,14 @@ Each stage reads from and writes to a shared `SamplingContext` — a mutable dat
 | 5 | `temperature` | Computes temperature via strategy | **always on** |
 | 6 | `temp_modulation` | Modulates temperature with quantum entropy | **off** (`beta=0`) |
 | 7 | `min_p` | Removes low-probability tokens | **off** (`0.0`) |
-| 8 | `tfs` | Tail-free sampling via second derivatives | **off** (`z=1.0`) |
-| 9 | `typical` | Locally typical sampling (near expected surprisal) | **off** (`p=1.0`) |
-| 10 | `eta` | Entropy-aware probability cutoff | **off** (`0.0`) |
-| 11 | `xtc` | Quantum coin-flip top-token exclusion | **off** (`0.0`) |
-| 12 | `entropy_fetch` | Fetches bytes + amplifies to u ∈ (0,1) | **always on** |
-| 13 | `selection_drift` | Drifts selection point with temporal memory | **off** (`step=0`) |
-| 14 | `mirostat` | Mirostat v2 adaptive perplexity control | **off** (`mode=0`) — *exclusive* |
-| 15 | `gumbel_selection` | Gumbel-Max trick with quantum noise | **off** (`false`) — *exclusive* |
-| 16 | `selection` | CDF-based token selection + one-hot forcing | **on** if no other selector |
+| 8 | `xtc` | Quantum coin-flip top-token exclusion | **off** (`0.0`) |
+| 9 | `entropy_fetch` | Fetches bytes + amplifies to u ∈ (0,1) | **always on** |
+| 10 | `selection_drift` | Drifts selection point with temporal memory | **off** (`step=0`) |
+| 11 | `mirostat` | Mirostat v2 adaptive perplexity control | **off** (`mode=0`) — *exclusive* |
+| 12 | `gumbel_selection` | Gumbel-Max trick with quantum noise | **off** (`false`) — *exclusive* |
+| 13 | `selection` | CDF-based token selection + one-hot forcing | **on** if no other selector |
 
-Stages 14–16 are **mutually exclusive selection methods** — only one selects the token. With default config, only stages 5, 12, and 16 do work; the rest no-op immediately (zero overhead).
+Stages 11–13 are **mutually exclusive selection methods** — only one selects the token. With default config, only stages 5, 9, and 13 do work; the rest no-op immediately (zero overhead).
 
 ### Custom pipelines
 
@@ -1070,9 +1029,6 @@ src/qr_sampler/
 │   ├── temperature.py             # Temperature computation stage
 │   ├── temp_modulation.py          # Quantum temperature modulation stage
 │   ├── min_p.py                   # Min-P probability floor stage
-│   ├── tfs.py                     # Tail-free sampling via second derivatives
-│   ├── typical.py                 # Locally typical sampling
-│   ├── eta.py                     # Entropy-aware probability cutoff
 │   ├── xtc.py                     # XTC quantum top-token exclusion stage
 │   ├── entropy_fetch.py           # JIT entropy fetch + amplification stage
 │   ├── selection_drift.py          # Selection drift stage

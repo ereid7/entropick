@@ -88,7 +88,7 @@ class MirostatStage:
         original_prob = float(probs[selected_vocab_idx])
         surprise = -np.log2(max(original_prob, 1e-30))
         error = surprise - tau
-        new_mu = mu - eta * error
+        new_mu = max(0.0, mu - eta * error)
 
         ctx.stage_state[_MU_KEY] = new_mu
 

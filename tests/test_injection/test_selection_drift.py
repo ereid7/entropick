@@ -30,9 +30,8 @@ class TestSelectionDrift:
             _env_file=None,  # type: ignore[call-arg]
             drift_step=0.1,
         )
-        initial_u = 0.5
         initial_pos = 0.5
-        new_u, new_pos = SelectionDrift.step(initial_u, source, config, initial_pos)
+        new_u, new_pos = SelectionDrift.step(source, config, initial_pos)
         assert new_pos != pytest.approx(initial_pos)
         # Both return values should be the drift position
         assert new_u == pytest.approx(new_pos)
@@ -41,13 +40,13 @@ class TestSelectionDrift:
         self,
         source: MockUniformSource,
     ) -> None:
-        """With drift_step=0.0, position and u should be unchanged."""
+        """With drift_step=0.0, position should be unchanged."""
         config = QRSamplerConfig(
             _env_file=None,  # type: ignore[call-arg]
             drift_step=0.0,
         )
-        new_u, new_pos = SelectionDrift.step(0.42, source, config, 0.5)
-        assert new_u == pytest.approx(0.42)
+        new_u, new_pos = SelectionDrift.step(source, config, 0.5)
+        assert new_u == pytest.approx(0.5)
         assert new_pos == pytest.approx(0.5)
 
     def test_step_stays_in_bounds_over_many_steps(self) -> None:
@@ -57,10 +56,9 @@ class TestSelectionDrift:
             drift_step=0.1,
         )
         pos = 0.5
-        u = 0.5
         for seed in range(1000):
             src = MockUniformSource(seed=seed)
-            u, pos = SelectionDrift.step(u, src, config, pos)
+            u, pos = SelectionDrift.step(src, config, pos)
             assert 0.0 <= pos < 1.0, f"step {seed}: position {pos} out of [0, 1)"
             assert 0.0 <= u < 1.0, f"step {seed}: u {u} out of [0, 1)"
 
@@ -73,19 +71,19 @@ class TestSelectionDrift:
             _env_file=None,  # type: ignore[call-arg]
             drift_step=0.2,
         )
-        new_u, new_pos = SelectionDrift.step(0.5, source, config, 0.5)
+        new_u, new_pos = SelectionDrift.step(source, config, 0.5)
         assert new_u == pytest.approx(new_pos)
 
     def test_step_handles_entropy_unavailable(self) -> None:
-        """When entropy source raises, returns (u, drift_position) unchanged."""
+        """When entropy source raises, returns drift_position unchanged."""
         config = QRSamplerConfig(
             _env_file=None,  # type: ignore[call-arg]
             drift_step=0.1,
         )
         failing_source = MagicMock()
         failing_source.get_random_bytes.side_effect = EntropyUnavailableError("test")
-        new_u, new_pos = SelectionDrift.step(0.42, failing_source, config, 0.75)
-        assert new_u == pytest.approx(0.42)
+        new_u, new_pos = SelectionDrift.step(failing_source, config, 0.75)
+        assert new_u == pytest.approx(0.75)
         assert new_pos == pytest.approx(0.75)
 
     def test_step_handles_empty_entropy_payload(self) -> None:
@@ -96,8 +94,8 @@ class TestSelectionDrift:
         )
         empty_source = MagicMock()
         empty_source.get_random_bytes.return_value = b""
-        new_u, new_pos = SelectionDrift.step(0.42, empty_source, config, 0.75)
-        assert new_u == pytest.approx(0.42)
+        new_u, new_pos = SelectionDrift.step(empty_source, config, 0.75)
+        assert new_u == pytest.approx(0.75)
         assert new_pos == pytest.approx(0.75)
 
     def test_step_wraps_at_boundary(self) -> None:
@@ -110,7 +108,7 @@ class TestSelectionDrift:
         wrapped_count = 0
         for seed in range(100):
             src = MockUniformSource(seed=seed)
-            _, pos = SelectionDrift.step(0.5, src, config, 0.95)
+            _, pos = SelectionDrift.step(src, config, 0.95)
             assert 0.0 <= pos < 1.0
             if pos < 0.5:
                 wrapped_count += 1

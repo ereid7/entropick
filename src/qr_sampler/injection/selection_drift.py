@@ -30,16 +30,14 @@ class SelectionDrift:
 
     @staticmethod
     def step(
-        u: float,
         entropy_source: EntropySource,
         config: QRSamplerConfig,
         drift_position: float,
         step_override: float | None = None,
     ) -> tuple[float, float]:
-        """Advance the drift by one step and return the new u value.
+        """Advance the drift by one step and return the new position.
 
         Args:
-            u: Current amplified uniform value from the signal amplifier.
             entropy_source: Source of quantum entropy bytes.
             config: Sampler configuration (uses drift_step, sample_count,
                 population_mean, population_std, injection_verbose).
@@ -48,22 +46,22 @@ class SelectionDrift:
 
         Returns:
             Tuple of (new_u, new_drift_position). Both values are the new
-            drift position. Returns (u, drift_position) unchanged if
-            step == 0 or entropy is unavailable.
+            drift position. Returns (drift_position, drift_position) unchanged
+            if step == 0 or entropy is unavailable.
         """
         drift_step = step_override if step_override is not None else config.drift_step
         if drift_step == 0.0:
-            return (u, drift_position)
+            return (drift_position, drift_position)
 
         try:
             raw_bytes = entropy_source.get_random_bytes(config.sample_count)
         except EntropyUnavailableError:
             _logger.warning("SelectionDrift: entropy unavailable, skipping step")
-            return (u, drift_position)
+            return (drift_position, drift_position)
 
         if not raw_bytes:
             _logger.warning("SelectionDrift: empty entropy payload, skipping step")
-            return (u, drift_position)
+            return (drift_position, drift_position)
 
         qval = bytes_to_uniform(raw_bytes, config)
 

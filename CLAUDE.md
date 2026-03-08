@@ -55,7 +55,7 @@ src/qr_sampler/
 |   +-- context.py                 # SamplingContext mutable dataclass -- state bag passed through all stages
 |   +-- registry.py                # StageRegistry: @register() decorator + entry-point auto-discovery
 +-- stages/
-|   +-- __init__.py                # Exports all 16 stage classes + build_default_pipeline()
+|   +-- __init__.py                # Exports all 13 stage classes + build_default_pipeline()
 |   +-- _utils.py                  # Shared stable_softmax(), shannon_entropy_from_probs()
 |   +-- adaptive_injection.py      # AdaptiveInjectionStage: entropy-based injection scaling
 |   +-- logit_perturbation.py             # LogitPerturbationStage: per-logit quantum noise
@@ -64,9 +64,6 @@ src/qr_sampler/
 |   +-- temperature.py             # TemperatureStage: compute temperature via strategy
 |   +-- temp_modulation.py           # TemperatureModulationStage: quantum temperature modulation
 |   +-- min_p.py                   # MinPStage: dynamic probability floor filtering
-|   +-- tfs.py                     # TailFreeSamplingStage: tail-free sampling via 2nd derivatives
-|   +-- typical.py                 # TypicalSamplingStage: locally typical sampling
-|   +-- eta.py                     # EtaSamplingStage: entropy-aware probability cutoff
 |   +-- xtc.py                     # XTCStage: quantum-driven top-token exclusion
 |   +-- entropy_fetch.py           # EntropyFetchStage: JIT entropy fetch + signal amplification
 |   +-- selection_drift.py         # SelectionDriftStage: per-request selection drift
@@ -137,9 +134,6 @@ tests/
 |   +-- test_stages.py             # Protocol compliance, registry, default pipeline, custom pipelines, stage_state
 |   +-- test_new_stages.py         # Min-P, XTC, adaptive injection stage tests + edge cases
 |   +-- test_top_n_sigma.py        # Top-n-sigma filtering tests
-|   +-- test_tfs.py                # Tail-free sampling tests
-|   +-- test_typical.py            # Locally typical sampling tests
-|   +-- test_eta.py                # Eta sampling tests
 |   +-- test_mirostat.py           # Mirostat v2 tests
 |   +-- test_dry.py                # DRY penalty tests
 |   +-- test_gumbel.py             # Gumbel-Max unit tests (standalone stage)
@@ -272,15 +266,12 @@ logits (torch.Tensor or numpy, one row per batch request)
   |      5. TemperatureStage       -- compute temperature + Shannon entropy
   |      6. TemperatureModulationStage -- quantum temperature modulation
   |      7. MinPStage              -- dynamic probability floor filtering
-  |      8. TailFreeSamplingStage  -- tail-free sampling via 2nd derivatives
-  |      9. TypicalSamplingStage   -- locally typical sampling
-  |     10. EtaSamplingStage       -- entropy-aware probability cutoff
-  |     11. XTCStage               -- quantum-driven top-token exclusion
-  |     12. EntropyFetchStage      -- JIT entropy fetch + amplification -> ctx.u
-  |     13. SelectionDriftStage    -- drift-based u replacement
-  |     14. MirostatStage          -- Mirostat v2 adaptive perplexity control
-  |     15. GumbelSelectionStage   -- Gumbel-Max trick for selection
-  |     16. SelectionStage         -- CDF-based token selection (skipped if mirostat/gumbel active)
+  |      8. XTCStage               -- quantum-driven top-token exclusion
+  |      9. EntropyFetchStage      -- JIT entropy fetch + amplification -> ctx.u
+  |     10. SelectionDriftStage    -- drift-based u replacement
+  |     11. MirostatStage          -- Mirostat v2 adaptive perplexity control
+  |     12. GumbelSelectionStage   -- Gumbel-Max trick for selection
+  |     13. SelectionStage         -- CDF-based token selection (skipped if mirostat/gumbel active)
   |
   +-> Persist ctx.stage_state back to _RequestState
   |

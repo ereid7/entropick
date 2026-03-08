@@ -41,7 +41,6 @@ class SelectionDriftStage:
 
         t_start = time.perf_counter_ns()
         ctx.u, new_position = SelectionDrift.step(
-            ctx.u,
             ctx.entropy_source,
             ctx.config,
             drift_position,

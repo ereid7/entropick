@@ -44,5 +44,5 @@ class EntropyFetchStage:
         # Amplify to uniform float.
         amp_result = ctx.amplifier.amplify(raw_bytes)
         ctx.u = amp_result.u
-        ctx.sample_mean = amp_result.diagnostics.get("sample_mean", 0.0)
-        ctx.z_score = amp_result.diagnostics.get("z_score", 0.0)
+        ctx.sample_mean = amp_result.diagnostics.get("sample_mean", float("nan"))
+        ctx.z_score = amp_result.diagnostics.get("z_score", float("nan"))

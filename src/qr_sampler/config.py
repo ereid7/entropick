@@ -45,16 +45,11 @@ _PER_REQUEST_FIELDS: frozenset[str] = frozenset(
         "mirostat_tau",
         "mirostat_eta",
         "top_n_sigma",
-        "tfs_z",
-        "typical_p",
-        "eta_cutoff",
         "dry_multiplier",
         "dry_base",
         "dry_allowed_length",
         "dry_penalty_last_n",
         "dry_sequence_breakers",
-        "entropix_varentropy",
-        "entropix_varentropy_thresh",
         "gumbel_selection",
         "log_level",
         "diagnostic_mode",
@@ -267,7 +262,7 @@ class QRSamplerConfig(BaseSettings):
 
     adaptive_injection: bool = Field(
         default=False,
-        description="Scale injection intensity by distribution entropy/varentropy.",
+        description="Scale injection intensity by distribution entropy.",
     )
     adaptive_injection_low_h: float = Field(
         default=1.0,
@@ -311,27 +306,6 @@ class QRSamplerConfig(BaseSettings):
         ge=0.0,
         allow_inf_nan=False,
     )
-    tfs_z: float = Field(
-        default=1.0,
-        description="Tail-free sampling z threshold. 1.0 = disabled.",
-        ge=0.0,
-        le=1.0,
-        allow_inf_nan=False,
-    )
-    typical_p: float = Field(
-        default=1.0,
-        description="Locally typical sampling threshold. 1.0 = disabled.",
-        ge=0.0,
-        le=1.0,
-        allow_inf_nan=False,
-    )
-    eta_cutoff: float = Field(
-        default=0.0,
-        description="Eta sampling cutoff (in 1e-4 units). 0 = disabled.",
-        ge=0.0,
-        allow_inf_nan=False,
-    )
-
     # --- DRY penalty (per-request overridable) ---
 
     dry_multiplier: float = Field(
@@ -358,19 +332,6 @@ class QRSamplerConfig(BaseSettings):
     dry_sequence_breakers: str = Field(
         default="",
         description="Comma-separated integer token IDs that break DRY sequence matching.",
-    )
-
-    # --- Entropix / varentropy (per-request overridable) ---
-
-    entropix_varentropy: bool = Field(
-        default=False,
-        description="Enable varentropy-based regime switching (extends adaptive injection).",
-    )
-    entropix_varentropy_thresh: float = Field(
-        default=3.0,
-        description="Varentropy threshold for 'confused' regime (nats^2).",
-        ge=0.0,
-        allow_inf_nan=False,
     )
 
     # --- Gumbel selection (per-request overridable) ---

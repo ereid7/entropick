@@ -98,14 +98,9 @@ class SamplingContext:
     injection_scale: float = 1.0
     """Scaling factor for injection methods (0.0 = skip, 1.0 = full strength).
 
-    Set by ``AdaptiveInjectionStage`` based on distribution entropy/varentropy.
+    Set by ``AdaptiveInjectionStage`` based on distribution entropy.
     Read by injection stages to modulate their intensity.
     """
-
-    # --- Varentropy (for Entropix regime switching) ---
-
-    varentropy: float = 0.0
-    """Variance of per-token information content (nats^2)."""
 
     # --- Injection tracking (written by stages, read by processor for logging) ---
 
